@@ -11,6 +11,7 @@ import de.btobastian.javacord.listener.message.MessageCreateListener;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Random;
 
 import static String.StringManipulation.*;
@@ -252,6 +253,8 @@ public class ProgrammableBot {
     }
 
     private boolean containsRes(String tag, String resource) {
+        if (tag.equals("<*>"))
+            return true;
         AvailableResource availableResource=getResourceByTag(tag);
         if (availableResource==null)
             return false;
@@ -300,51 +303,62 @@ public class ProgrammableBot {
         user.sendMessage(categoryList);
     }
 
+    LinkedList<String>[] extractResources(ArrayList<String>[] messageStructure, int index, String message) {
+        String startingConstant = messageStructure[0].get(index);
+        if (startingConstant.length() != 0)
+            if (message.startsWith(startingConstant))
+                message = replaceFirst(message, messageStructure[0].get(index), "");
+            else
+                return null;//structure didn't fit
+        if (index == messageStructure[1].size()) {
+            if (message.length()==0) {
+                LinkedList<String>[] ret = new LinkedList[3];
+                ret[0] = new LinkedList<String>();
+                ret[1] = new LinkedList<String>();
+                ret[2] = new LinkedList<String>();
+                return ret;
+            } else
+                return null;
+        }
+        String[] messageParts;
+        String nextStructureConstant=messageStructure[0].get(index+1);
+        //split the text at next constant occurrence
+        if (nextStructureConstant.length() != 0)
+            messageParts = split(message,nextStructureConstant);
+        else {
+            messageParts=message.split("");
+        }
+        String resFound="";
+        //search for resource
+        for (int k = 0; k < messageParts.length; k++) {
+            resFound += messageParts[k];
+
+            if (containsRes(messageStructure[1].get(index), resFound)) {//fits so far
+                LinkedList<String>[] resourcesFoundSoFar=extractResources(messageStructure, index + 1, replaceFirst(message, resFound,""));
+                if (resourcesFoundSoFar!=null) {
+                    resourcesFoundSoFar[0].addFirst(resFound);
+                    resourcesFoundSoFar[1].addFirst(messageStructure[1].get(index));
+                    resourcesFoundSoFar[2].addFirst(messageStructure[2].get(index));
+                    return resourcesFoundSoFar;
+                }
+            }
+
+            resFound += nextStructureConstant;
+        }
+
+        return null;
+    }
+
     private String readMessageGenerateRespond (String message, String senderMentionTag, String sendChannel) {
         String respond = null;
         message=message.replaceAll(mentionTag,"@me");
+        //for each message category
         NextCat:for (MessageCat messageCat : messageCats)
-            NextMessage:for (ArrayList<String>[] messageConstant : messageCat.messages) {
-                ArrayList<String> res = new ArrayList<String>();
-                ArrayList<String> resTag = new ArrayList<String>();
-                ArrayList<String> resID = new ArrayList<String>();
-                String restOfMessage = message;
-                if (messageConstant[0].get(0).length()!=0)
-                    if (restOfMessage.startsWith(messageConstant[0].get(0))) {
-                        restOfMessage = replaceFirst(restOfMessage,messageConstant[0].get(0), "");
-                    } else {
-                        continue;
-                    }
-                for (int i = 1; i < messageConstant[0].size(); i++)
-                    if (restOfMessage.contains(messageConstant[0].get(i))) {
-                        String[] messageParts;
-                        if (messageConstant[0].get(i).length() != 0)
-                            messageParts = split(restOfMessage,messageConstant[0].get(i));
-                        else {
-                            messageParts=new String[1];
-                            messageParts[0]=restOfMessage;
-                        }
-                        String resFound=messageParts[0];
-                        if (!containsRes(messageConstant[1].get(res.size()),resFound)) {
-                            if (messageParts.length==1)
-                                continue NextMessage;
-                            for (int k = 1; k < messageParts.length; k++) {
-                                resFound += messageConstant[0].get(i);
-                                resFound += messageParts[k];
-                                if (containsRes(messageConstant[1].get(res.size()), resFound))
-                                    break;
-                                if (k == (messageParts.length - 1))
-                                    continue NextMessage;
-                            }
-                        }
-                        resID.add(messageConstant[2].get(res.size()));
-                        resTag.add(messageConstant[1].get(res.size()));
-                        res.add(resFound);
-                        restOfMessage = replaceFirst(restOfMessage,resFound + messageConstant[0].get(i), "");
-                    } else {
-                        continue NextMessage;
-                    }
-
+            //for each message structure
+            NextMessage:for (ArrayList<String>[] messageStructure : messageCat.messages) {
+                LinkedList<String>[] foundResources=extractResources(messageStructure,0,message);
+                if (foundResources==null)
+                    continue NextMessage;
                 if (messageCat.responds.size()==0) {
                     respond = messageCat.messageTag;
                     return respond;
@@ -358,19 +372,24 @@ public class ProgrammableBot {
                     //add resource
                     if (i<respondStructure[2].size()) {
                         AvailableResource currentResource = getResourceByTag(respondStructure[1].get(i));
-                        if (currentResource == null || currentResource.resources.size() == 0) {
-                            respond = respond + "(Invalid Resource)";
-                            continue;
-                        }
 
-                        if (respondStructure[2].get(i) == null)
+                        if (respondStructure[2].get(i) == null) {
+                            if (currentResource == null || currentResource.resources.size() == 0) {
+                                respond = respond + "(Invalid Resource)";
+                                continue;
+                            }
                             respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
+                        }
                         else {
-                            for (int j=0;j<resID.size();j++)
-                                if(resID.get(j).equals(respondStructure[2].get(i))&&resTag.get(j).equals(respondStructure[1].get(i))){
-                                    respond = respond + res.get(j);
+                            for (int j=0;j<foundResources[0].size();j++)
+                                if(foundResources[2].get(j).equals(respondStructure[2].get(i))&&foundResources[1].get(j).equals(respondStructure[1].get(i))){
+                                    respond = respond + foundResources[0].get(j);
                                     continue NextStructure;
                                 }
+                            if (currentResource == null || currentResource.resources.size() == 0) {
+                                respond = respond + "(Invalid Resource)";
+                                continue;
+                            }
                             respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
                         }
                     }
