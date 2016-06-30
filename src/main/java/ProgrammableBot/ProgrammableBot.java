@@ -398,7 +398,7 @@ public class ProgrammableBot {
             }
     }
 
-    public void handleMessages(Message message, boolean isWhite){
+    public void handleMessages(final Message message, final boolean isWhite){
         String messageContent = message.getContent();
         while (messageContent.endsWith(" "))
             messageContent = replaceLast(messageContent, " ", "");
@@ -424,27 +424,37 @@ public class ProgrammableBot {
             else
                 sendMemberResource(message.getAuthor(),availableResource);
         } else if (messageContent.equals("?help") && isWhite) {
-            message.getChannelReceiver().sendMessage("see also:```?help admin``` ```?help list```\nadd a new resource ```.new_res <resource-tag>```\nadd something to resource ```.add_to_res <resource-tag> res```\nremove something from resource ```.remove_from_res <resource-tag> res```");
-            try {
-                Thread.currentThread().sleep(250);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            message.getChannelReceiver().sendMessage("\n\nadd a message to category```.add_message [category] message content(can include any of the tags below)```\nadd a respond message to category```.add_respond [category] message content(can include any of the tags below```\n\n*Tags:*\n\nplaceholder for resource");
-            try {
-                Thread.currentThread().sleep(250);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            message.getChannelReceiver().sendMessage("```<resource-tag>{resource-num}```\nusing```{resource-num}```is optional, use it if you want to use the same resource in response\n\nplaceholder for sender of message```@sender```\nplaceholder for channel name```#sent-channel```\nplaceholder for bot```@me```");
+            new Thread() {
+                @Override
+                public void run() {
+                    message.getChannelReceiver().sendMessage("see also:```?help admin``` ```?help list```\nadd a new resource ```.new_res <resource-tag>```\nadd something to resource ```.add_to_res <resource-tag> res```\nremove something from resource ```.remove_from_res <resource-tag> res```");
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    message.getChannelReceiver().sendMessage("\n\nadd a message to category```.add_message [category] message content(can include any of the tags below)```\nadd a respond message to category```.add_respond [category] message content(can include any of the tags below```\n\n*Tags:*\n\nplaceholder for resource");
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    message.getChannelReceiver().sendMessage("```<resource-tag>{resource-num}```\nusing```{resource-num}```is optional, use it if you want to use the same resource in response\n\nplaceholder for sender of message```@sender```\nplaceholder for channel name```#sent-channel```\nplaceholder for bot```@me```");
+                }
+            }.start();
         } else if (messageContent.equals("?help admin") && isWhite) {
-            message.getChannelReceiver().sendMessage("add a member/channel/role to white list: ```.add white member/channel/role name```\nadd a member/channel/role to black list: ```.add black member/channel/role name```");
-            try {
-                Thread.currentThread().sleep(250);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            message.getChannelReceiver().sendMessage("remove a member/channel/role from white list: ```.remove white member/channel/role name```\nremove a member/channel/role from black list: ```.remove black member/channel/role name```");
+            new Thread() {
+                @Override
+                public void run() {
+                    message.getChannelReceiver().sendMessage("add a member/channel/role to white list: ```.add white member/channel/role name```\nadd a member/channel/role to black list: ```.add black member/channel/role name```");
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    message.getChannelReceiver().sendMessage("remove a member/channel/role from white list: ```.remove white member/channel/role name```\nremove a member/channel/role from black list: ```.remove black member/channel/role name```");
+                }
+            }.start();
         } else if (messageContent.equals("?help list") && isWhite) {
             message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
         } else if (messageContent.startsWith(".save db ") && isWhite) {
