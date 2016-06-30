@@ -3,6 +3,7 @@ package ProgrammableBot;
 import com.google.common.util.concurrent.FutureCallback;
 import de.btobastian.javacord.DiscordAPI;
 import de.btobastian.javacord.Javacord;
+import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
 import de.btobastian.javacord.entities.permissions.Role;
 import de.btobastian.javacord.listener.message.MessageCreateListener;
@@ -184,11 +185,9 @@ public class ProgrammableBot {
         String resourceToRemove=replaceFirst(resourceData,resourceTag+" ", "");
         AvailableResource availableResource=getResourceByTag(resourceTag);
         if (availableResource!=null)
-            for (String resource : availableResource.resources)
-                if (resource.equals(resourceToRemove)) {
-                    availableResource.resources.remove(resource);
-                    return "Resource removed.";
-                }
+            if (availableResource.resources.remove(resourceToRemove)) {
+                return "Resource removed.";
+            }
         return "Resource not found.";
     }
     private String handleAddMessage(String message) {
@@ -260,6 +259,45 @@ public class ProgrammableBot {
             if (res.equals(resource))
                 return true;
         return false;
+    }
+
+    private void sendMemberResourceList(User user) {
+        String resourceList="Resource list:\n";
+        for (int i=0;i<availableResources.size();i++) {
+            if (resourceList.length()+availableResources.get(i).resourceTag.length()>400) {
+                user.sendMessage(resourceList);
+                resourceList=availableResources.get(i).resourceTag+"\n";
+            } else {
+                resourceList+=availableResources.get(i).resourceTag+"\n";
+            }
+        }
+        user.sendMessage(resourceList);
+    }
+
+    private void sendMemberResource(User user, AvailableResource availableResource) {
+        String resourceList="Resource " + availableResource.resourceTag + " :\n";
+        for (int i=0;i<availableResource.resources.size();i++) {
+            if (resourceList.length()+availableResource.resources.get(i).length()>400) {
+                user.sendMessage(resourceList);
+                resourceList=availableResource.resources.get(i)+"\n";
+            } else {
+                resourceList+=availableResource.resources.get(i)+"\n";
+            }
+        }
+        user.sendMessage(resourceList);
+    }
+
+    private void sendMemberCategoryList(User user) {
+        String categoryList="Category list:\n";
+        for (int i=0;i<messageCats.size();i++) {
+            if (categoryList.length()+messageCats.get(i).messageTag.length()>400) {
+                user.sendMessage(categoryList);
+                categoryList=messageCats.get(i).messageTag+"\n";
+            } else {
+                categoryList+=messageCats.get(i).messageTag+"\n";
+            }
+        }
+        user.sendMessage(categoryList);
     }
 
     private String readMessageGenerateRespond (String message, String senderMentionTag, String sendChannel) {
@@ -375,20 +413,40 @@ public class ProgrammableBot {
             message.reply(handleAddMessage(messageContent));
         else if ((messageContent.startsWith(".add_respond ")) && isWhite)
             message.reply(handleAddRespond(messageContent));
-        else if (messageContent.equals("?help") && isWhite) {
-            message.getChannelReceiver().sendMessage("add a new resource ```.new_res <resource-tag>```\nadd something to resource ```.add_to_res <resource-tag> res```\nremove something from resource ```.remove_from_res <resource-tag> res```");
+        else if (messageContent.equals(".res_list") && isWhite)
+            sendMemberResourceList(message.getAuthor());
+        else if (messageContent.equals(".cat_list") && isWhite)
+            sendMemberCategoryList(message.getAuthor());
+        else if (messageContent.startsWith(".res_view ") && isWhite) {
+            AvailableResource availableResource=getResourceByTag(replaceFirst(messageContent,".res_view ",""));
+            if (availableResource==null)
+                message.reply("resource not found");
+            else
+                sendMemberResource(message.getAuthor(),availableResource);
+        } else if (messageContent.equals("?help") && isWhite) {
+            message.getChannelReceiver().sendMessage("see also:```?help admin``` ```?help list```\nadd a new resource ```.new_res <resource-tag>```\nadd something to resource ```.add_to_res <resource-tag> res```\nremove something from resource ```.remove_from_res <resource-tag> res```");
             try {
-                Thread.currentThread().sleep(500);
+                Thread.currentThread().sleep(250);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            message.getChannelReceiver().sendMessage("\n\nadd a message to category ```.add_message [category] message content (can include any of the tags below)```\nadd a respond message to category ```.add_respond [category] message content (can include any of the tags below)```\n\n*Tags:*\n\nplaceholder for resource");
+            message.getChannelReceiver().sendMessage("\n\nadd a message to category```.add_message [category] message content(can include any of the tags below)```\nadd a respond message to category```.add_respond [category] message content(can include any of the tags below```\n\n*Tags:*\n\nplaceholder for resource");
             try {
-                Thread.currentThread().sleep(500);
+                Thread.currentThread().sleep(250);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            message.getChannelReceiver().sendMessage("```<resource-tag>{resource-num}```\nusing\n```{resource-num}```is optional, use it if you want to use the same resource in the response\n\nplaceholder for the sender of message```@sender```\nplaceholder for name of the channel```#sent-channel```\nplaceholder for bot```@me```");
+            message.getChannelReceiver().sendMessage("```<resource-tag>{resource-num}```\nusing```{resource-num}```is optional, use it if you want to use the same resource in response\n\nplaceholder for sender of message```@sender```\nplaceholder for channel name```#sent-channel```\nplaceholder for bot```@me```");
+        } else if (messageContent.equals("?help admin") && isWhite) {
+            message.getChannelReceiver().sendMessage("add a member/channel/role to white list: ```.add white member/channel/role name```\nadd a member/channel/role to black list: ```.add black member/channel/role name```");
+            try {
+                Thread.currentThread().sleep(250);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            message.getChannelReceiver().sendMessage("remove a member/channel/role from white list: ```.remove white member/channel/role name```\nremove a member/channel/role from black list: ```.remove black member/channel/role name```");
+        } else if (messageContent.equals("?help list") && isWhite) {
+            message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
         } else if (messageContent.startsWith(".save db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", ""));
             if (!db.getAbsolutePath().contains("..")) {

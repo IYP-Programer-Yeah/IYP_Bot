@@ -1,0 +1,8 @@
+*.class
+src/main/java/IYP.java
+src/main/java/MyPingPongBot.java
+*.db
+*.xml
+permissions
+src/main/java/MessageIdentity.java
+*.iml
