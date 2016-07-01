@@ -31,6 +31,10 @@ public class ProgrammableBot {
     private ArrayList<String> blackListRoles = new ArrayList<String>();
     private ArrayList<String> blackListMembers = new ArrayList<String>();
 
+    private ArrayList<String> adminListRoles = new ArrayList<String>();
+    private ArrayList<String> adminListMembers = new ArrayList<String>();
+
+
     private ArrayList<MessageCat> messageCats = new ArrayList<MessageCat>();
     private ArrayList<AvailableResource> availableResources = new ArrayList<AvailableResource>();
 
@@ -41,6 +45,9 @@ public class ProgrammableBot {
     }
     public void addMemberToBlackList(String member){
         blackListMembers.add(member);
+    }
+    public void addMemberToAdminList(String member){
+        adminListMembers.add(member);
     }
 
     public void addChannelToWhiteList(String channel){
@@ -56,7 +63,9 @@ public class ProgrammableBot {
     public void addRoleToBlackList(String role){
         blackListRoles.add(role);
     }
-
+    public void addRoleToAdminList(String role){
+        adminListRoles.add(role);
+    }
 
 
     public void removeMemberFromWhiteList(String member){
@@ -64,6 +73,9 @@ public class ProgrammableBot {
     }
     public void removeMemberFromBlackList(String member){
         blackListMembers.remove(member);
+    }
+    public void removeMemberFromAdminList(String member){
+        adminListMembers.remove(member);
     }
 
     public void removeChannelFromWhiteList(String channel){
@@ -79,6 +91,9 @@ public class ProgrammableBot {
     public void removeRoleFromBlackList(String role){
         blackListRoles.remove(role);
     }
+    public void removeRoleFromAdminList(String role){
+        adminListRoles.remove(role);
+    }
 
 
 
@@ -87,6 +102,9 @@ public class ProgrammableBot {
     }
     private boolean isMemberBlack (String member){
         return blackListMembers.contains(member);
+    }
+    private boolean isMemberAdmin (String member){
+        return adminListMembers.contains(member);
     }
 
     private boolean isChannelWhite (String channel){
@@ -102,7 +120,9 @@ public class ProgrammableBot {
     private boolean isRoleBlack (String role){
         return blackListRoles.contains(role);
     }
-
+    private boolean isRoleAdmin (String role){
+        return adminListRoles.contains(role);
+    }
 
     public void savePermissions(){
         File permissions=new File("permissions");
@@ -120,7 +140,17 @@ public class ProgrammableBot {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        File admins=new File("admins");
 
+        try {
+            ObjectOutputStream objectOutputStream=new ObjectOutputStream(new FileOutputStream(admins));
+
+            objectOutputStream.writeObject(adminListMembers);
+            objectOutputStream.writeObject(adminListRoles);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void loadPermissions(){
@@ -140,7 +170,18 @@ public class ProgrammableBot {
                 e.printStackTrace();
             }
         }
+        File admins=new File("admins");
+        if (admins.exists()) {
+            try {
+                ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(admins));
 
+                adminListMembers=(ArrayList<String>) objectInputStream.readObject();
+                adminListRoles=(ArrayList<String>) objectInputStream.readObject();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private AvailableResource getResourceByTag (String tag) {
@@ -417,7 +458,7 @@ public class ProgrammableBot {
             }
     }
 
-    public void handleMessages(final Message message, final boolean isWhite){
+    public void handleMessages(final Message message, final boolean isWhite, final boolean isAdmin){
         String messageContent = message.getContent();
         while (messageContent.endsWith(" "))
             messageContent = replaceLast(messageContent, " ", "");
@@ -459,9 +500,15 @@ public class ProgrammableBot {
                         e.printStackTrace();
                     }
                     message.getChannelReceiver().sendMessage("```<resource-tag>{resource-num}```\nusing```{resource-num}```is optional, use it if you want to use the same resource in response\n\nplaceholder for sender of message```@sender```\nplaceholder for channel name```#sent-channel```\nplaceholder for bot```@me```");
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    message.getChannelReceiver().sendMessage("place holder for arbitrary string```<*>{resource-num}```\nusing```{resource-num}```is optional, use it if you want to use the same resource in response");
                 }
             }.start();
-        } else if (messageContent.equals("?help admin") && isWhite) {
+        } else if (messageContent.equals("?help admin") && isWhite && isAdmin) {
             new Thread() {
                 @Override
                 public void run() {
@@ -472,6 +519,12 @@ public class ProgrammableBot {
                         e.printStackTrace();
                     }
                     message.getChannelReceiver().sendMessage("remove a member/channel/role from white list: ```.remove white member/channel/role name```\nremove a member/channel/role from black list: ```.remove black member/channel/role name```");
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    message.getChannelReceiver().sendMessage("\nremove a member/role from admin list: ```.remove admin member/role name```\nremove a member/role from admin list: ```.remove admin member/role name```");
                 }
             }.start();
         } else if (messageContent.equals("?help list") && isWhite) {
@@ -511,36 +564,46 @@ public class ProgrammableBot {
             resetDatabase();
             message.reply("database loaded");
             
-        }else if (messageContent.startsWith(".add white member ")&&isWhite) {
+        }else if (messageContent.startsWith(".add admin member ")&&isWhite && isAdmin) {
+            addMemberToAdminList(replaceFirst(messageContent,".add admin member ",""));
+            message.reply("member added to admin list.");
+            savePermissions();
+
+        }else if (messageContent.startsWith(".add white member ")&&isWhite && isAdmin) {
             addMemberToWhiteList(replaceFirst(messageContent,".add white member ",""));
             message.reply("member added to white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".add black member ")&&isWhite) {
+        }else if (messageContent.startsWith(".add black member ")&&isWhite && isAdmin) {
             addMemberToBlackList(replaceFirst(messageContent,".add black member ",""));
             message.reply("member added to black list.");
             savePermissions();
 
 
 
-        }else if (messageContent.startsWith(".add white channel ")&&isWhite) {
+        }else if (messageContent.startsWith(".add white channel ")&&isWhite && isAdmin) {
             addChannelToWhiteList(replaceFirst(messageContent,".add white channel ",""));
             message.reply("channel added to white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".add black channel ")&&isWhite) {
+        }else if (messageContent.startsWith(".add black channel ")&&isWhite && isAdmin) {
             addChannelToBlackList(replaceFirst(messageContent,".add black channel ",""));
             message.reply("channel added to black list.");
             savePermissions();
 
 
 
-        }else if (messageContent.startsWith(".add white role ")&&isWhite) {
+        }else if (messageContent.startsWith(".add admin role ")&&isWhite && isAdmin) {
+            addRoleToAdminList(replaceFirst(messageContent,".add admin role ",""));
+            message.reply("role added to admin list.");
+            savePermissions();
+
+        }else if (messageContent.startsWith(".add white role ")&&isWhite && isAdmin) {
             addRoleToWhiteList(replaceFirst(messageContent,".add white role ",""));
             message.reply("role added to white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".add black role ")&&isWhite) {
+        }else if (messageContent.startsWith(".add black role ")&&isWhite && isAdmin) {
             addRoleToBlackList(replaceFirst(messageContent,".add black role ",""));
             message.reply("role added to black list.");
             savePermissions();
@@ -550,36 +613,46 @@ public class ProgrammableBot {
             
             
             
-        }else if (messageContent.startsWith(".remove white member ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove admin member ")&&isWhite && isAdmin) {
+            removeMemberFromAdminList(replaceFirst(messageContent,".remove admin member ",""));
+            message.reply("member removed from admin list.");
+            savePermissions();
+
+        }else if (messageContent.startsWith(".remove white member ")&&isWhite && isAdmin) {
             removeMemberFromWhiteList(replaceFirst(messageContent,".remove white member ",""));
             message.reply("member removed from white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".remove black member ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove black member ")&&isWhite && isAdmin) {
             removeMemberFromBlackList(replaceFirst(messageContent,".remove black member ",""));
             message.reply("member removed from black list.");
             savePermissions();
 
 
 
-        }else if (messageContent.startsWith(".remove white channel ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove white channel ")&&isWhite && isAdmin) {
             removeChannelFromWhiteList(replaceFirst(messageContent,".remove white channel ",""));
             message.reply("channel removed from white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".remove black channel ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove black channel ")&&isWhite && isAdmin) {
             removeChannelFromBlackList(replaceFirst(messageContent,".remove black channel ",""));
             message.reply("channel removed from black list.");
             savePermissions();
 
 
 
-        }else if (messageContent.startsWith(".remove white role ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove admin role ")&&isWhite && isAdmin) {
+            removeRoleFromAdminList(replaceFirst(messageContent,".remove admin role ",""));
+            message.reply("role removed from admin list.");
+            savePermissions();
+
+        }else if (messageContent.startsWith(".remove white role ")&&isWhite && isAdmin) {
             removeRoleFromWhiteList(replaceFirst(messageContent,".remove white role ",""));
             message.reply("role removed from white list.");
             savePermissions();
 
-        }else if (messageContent.startsWith(".remove black role ")&&isWhite) {
+        }else if (messageContent.startsWith(".remove black role ")&&isWhite && isAdmin) {
             removeRoleFromBlackList(replaceFirst(messageContent,".remove black role ",""));
             message.reply("role removed from black list.");
             savePermissions();
@@ -594,7 +667,7 @@ public class ProgrammableBot {
     }
 
     public ProgrammableBot(String token) {
-        DiscordAPI api = Javacord.getApi(token, true);
+        final DiscordAPI api = Javacord.getApi(token, true);
         // connect
         api.connect(new FutureCallback<DiscordAPI>() {
             public void onSuccess(DiscordAPI api) {
@@ -622,7 +695,8 @@ public class ProgrammableBot {
 
                         if (!isBlack) {
                             boolean isWhite=(isMemberWhite(memberName)||isRoleWhite(roleName))&&isChannelWhite(channelName);
-                            handleMessages(message,isWhite);
+                            boolean isAdmin=isMemberAdmin(memberName)||isRoleAdmin(roleName);
+                            handleMessages(message,isWhite,isAdmin);
                         }
 
                     }

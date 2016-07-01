@@ -6,3 +6,4 @@ src/main/java/MyPingPongBot.java
 permissions
 src/main/java/MessageIdentity.java
 *.iml
+admins
