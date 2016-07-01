@@ -528,7 +528,7 @@ public class ProgrammableBot {
                 }
             }.start();
         } else if (messageContent.equals("?help list") && isWhite) {
-            message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
+            message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```.res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
         } else if (messageContent.startsWith(".save db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", ""));
             if (!db.getAbsolutePath().contains("..")) {
@@ -560,7 +560,54 @@ public class ProgrammableBot {
                     message.reply("database not found");
             } else
                 message.reply("access denied");
-        }else if (messageContent.equals(".reset")&&isWhite) {
+        } else if (messageContent.startsWith(".add db ") && isWhite) {
+            File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".add db ", ""));
+            if (!db.getAbsolutePath().contains("..")) {
+                if (db.exists()) {
+                    try {
+                        ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(db));
+                        ArrayList<AvailableResource> availableResourcesToAdd = (ArrayList<AvailableResource>) objectInputStream.readObject();
+                        ArrayList<MessageCat> messageCatsToAdd = (ArrayList<MessageCat>) objectInputStream.readObject();
+
+
+                        //add the resources
+                        for (AvailableResource availableResource:availableResourcesToAdd){
+                            AvailableResource existingRes=getResourceByTag(availableResource.resourceTag);
+                            if (existingRes!=null) {
+                                for (String newRes:availableResource.resources)
+                                    if (!existingRes.resources.contains(newRes))
+                                        existingRes.resources.add(newRes);
+
+                            } else
+                                availableResources.add(availableResource);
+                        }
+
+                        //add categories
+                        for (MessageCat messageCat:messageCatsToAdd) {
+                            MessageCat existingMessageCat=getMessageCatByTag(messageCat.messageTag);
+                            if (existingMessageCat!=null) {
+                                for (ArrayList<String>[] messageStructure : messageCat.messages)
+                                    if (!existingMessageCat.messages.contains(messageStructure))
+                                        existingMessageCat.messages.add(messageStructure);
+                                for (ArrayList<String>[] respondStructure : messageCat.responds)
+                                    if (!existingMessageCat.responds.contains(respondStructure))
+                                        existingMessageCat.responds.add(respondStructure);
+                            } else
+                                messageCats.add(messageCat);
+                        }
+
+
+
+
+                        message.reply("database loaded");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else
+                    message.reply("database not found");
+            } else
+                message.reply("access denied");
+        } else if (messageContent.equals(".reset")&&isWhite) {
             resetDatabase();
             message.reply("database loaded");
             
