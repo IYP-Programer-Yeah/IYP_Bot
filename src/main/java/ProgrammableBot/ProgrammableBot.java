@@ -9,6 +9,9 @@ import de.btobastian.javacord.entities.permissions.Role;
 import de.btobastian.javacord.listener.message.MessageCreateListener;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -23,6 +26,31 @@ import static String.StringManipulation.*;
  * create a new instance to run the bot
  */
 public class ProgrammableBot {
+
+    public static String runProgram(String className, String functionName, String[] args) {
+        try {
+
+            URLClassLoader classLoader = null;
+            try {
+                classLoader = URLClassLoader.newInstance(new URL[]{new File("").toURI().toURL()});
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+            Object[] arg={args };
+            Object ret = Class.forName(className, true, classLoader).getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
+            return (String)ret;
+        } catch (ClassNotFoundException e) {
+            return "(Invalid Class)";
+        } catch (Exception e) {
+            return "(Invalid Method)";
+        }
+    }
+
+
+
+
+
+
     private ArrayList<String> whiteListChannels = new ArrayList<String>();
     private ArrayList<String> whiteListRoles = new ArrayList<String>();
     private ArrayList<String> whiteListMembers = new ArrayList<String>();
@@ -37,6 +65,7 @@ public class ProgrammableBot {
 
     private ArrayList<MessageCat> messageCats = new ArrayList<MessageCat>();
     private ArrayList<AvailableResource> availableResources = new ArrayList<AvailableResource>();
+    private ArrayList<Program> programs = new ArrayList<Program>();
 
     private String mentionTag;
 
@@ -198,6 +227,13 @@ public class ProgrammableBot {
         return null;
     }
 
+    private Program getProgramByTag(String programTag) {
+        for (Program program:programs)
+            if (program.programTag.equals(programTag))
+                return program;
+        return null;
+    }
+
     private String handleAddNewRes(String message) {
         String resourceTag=replaceFirst(message,".new_res ", "");
         if (resourceTag.contains(" "))
@@ -262,9 +298,30 @@ public class ProgrammableBot {
         }
         messageCat=new MessageCat();
         messageCat.messageTag=messageCatToFind;
-        messageCat.responds.add(getResTagsFromString(messageContent));
+        messageCat.responds.add(getResTagsFromRespondString(messageContent));
         messageCats.add(messageCat);
         return "Respond added";
+    }
+
+    private String handleAddProgram (String message) {
+        String programData=replaceFirst(message,".add_program ", "");
+        String programTag=split(programData," ")[0];
+
+        String code=replaceFirst(programData,programTag+" ","");
+
+        Program program=getProgramByTag(programTag);
+        if (program!=null) {
+            return "Program already exists";
+        }
+        if (JavaStringCompiler.compileString(code,programTag.replace("~",""))) {
+            program=new Program();
+            program.programTag=programTag;
+            program.code=code;
+            programs.add(program);
+            return "Program added";
+        }
+        return "Invalid program";
+
     }
 
     private ArrayList<String>[] getResTagsFromString (String message) {
@@ -283,6 +340,49 @@ public class ProgrammableBot {
                 } else {
                     resTagIDs.add(null);
                 }
+            }
+        ArrayList<String>[] msgData=new ArrayList[3];
+        msgData[0]=new ArrayList<String>();
+        for (String messagePart:messageParts)
+            msgData[0].add(messagePart);
+        msgData[1]=resTags;
+        msgData[2]=resTagIDs;
+        return msgData;
+    }
+
+    private ArrayList<String>[] getResTagsFromRespondString (String message) {
+        String[] programParts=split(" "+message,"~");
+
+        for (int i=1;i<programParts.length;i+=2) {
+            message=message.replace("~"+programParts[i]+"~","<"+programParts[i].replace("<","~").replace(">","~")+">");
+        }
+        ArrayList<String> resTags=new ArrayList<String>();
+        ArrayList<String> resTagIDs=new ArrayList<String>();
+        String[] messageParts=split(message,"<");
+        for (int i=0;i<messageParts.length;i++)
+            if (messageParts[i].contains(">")) {
+                String resTag="<"+split(messageParts[i],">")[0]+">";
+                messageParts[i]=replaceFirst(("<"+messageParts[i]),resTag,"");
+
+                if (resTag.contains("~")) {
+                    String[] programArgs = split(" " + resTag, "~");
+
+                    for (int j = 1; j < programArgs.length; j += 2) {
+                        resTag = resTag.replace("~" + programArgs[j] + "~", "<" + programArgs[j].replace("<", "~").replace(">", "~") + ">");
+                    }
+
+                    resTag=replaceLast(replaceFirst(resTag,"<","~"),">","~");
+                    resTagIDs.add("program");
+                } else {
+                    if (messageParts[i].startsWith("{")) {
+                        String res_num = replaceFirst(split(messageParts[i], "}")[0], "{", "");
+                        resTagIDs.add(res_num);
+                        messageParts[i] = replaceFirst(messageParts[i], "{" + res_num + "}", "");
+                    } else {
+                        resTagIDs.add(null);
+                    }
+                }
+                resTags.add(resTag);
             }
         ArrayList<String>[] msgData=new ArrayList[3];
         msgData[0]=new ArrayList<String>();
@@ -412,26 +512,53 @@ public class ProgrammableBot {
                     respond=respond+respondStructure[0].get(i);
                     //add resource
                     if (i<respondStructure[2].size()) {
-                        AvailableResource currentResource = getResourceByTag(respondStructure[1].get(i));
+                        if (!respondStructure[1].get(i).startsWith("~")) {
+                            AvailableResource currentResource = getResourceByTag(respondStructure[1].get(i));
 
-                        if (respondStructure[2].get(i) == null) {
-                            if (currentResource == null || currentResource.resources.size() == 0) {
-                                respond = respond + "(Invalid Resource)";
-                                continue;
-                            }
-                            respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
-                        }
-                        else {
-                            for (int j=0;j<foundResources[0].size();j++)
-                                if(foundResources[2].get(j).equals(respondStructure[2].get(i))&&foundResources[1].get(j).equals(respondStructure[1].get(i))){
-                                    respond = respond + foundResources[0].get(j);
-                                    continue NextStructure;
+                            if (respondStructure[2].get(i) == null) {
+                                if (currentResource == null || currentResource.resources.size() == 0) {
+                                    respond = respond + "(Invalid Resource)";
+                                    continue;
                                 }
-                            if (currentResource == null || currentResource.resources.size() == 0) {
-                                respond = respond + "(Invalid Resource)";
-                                continue;
+                                respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
+                            } else {
+                                for (int j = 0; j < foundResources[0].size(); j++)
+                                    if (foundResources[2].get(j).equals(respondStructure[2].get(i)) && foundResources[1].get(j).equals(respondStructure[1].get(i))) {
+                                        respond = respond + foundResources[0].get(j);
+                                        continue NextStructure;
+                                    }
+                                if (currentResource == null || currentResource.resources.size() == 0) {
+                                    respond = respond + "(Invalid Resource)";
+                                    continue;
+                                }
+                                respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
                             }
-                            respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
+                        } else {
+                            ArrayList<String>[] programArgs = getResTagsFromString(respondStructure[1].get(i));
+                            String[] args = new String[programArgs[1].size()];
+
+                            for (int k=0;k<args.length;k++) {
+                                String arg = null;
+                                for (int j=0;j<args.length;j++)
+                                    if (foundResources[1].get(j).equals(programArgs[1].get(k))&&foundResources[2].get(j).equals(programArgs[2].get(k)))
+                                        arg=foundResources[0].get(j);
+
+                                if (arg==null) {
+                                    respond = respond + "(Invalid Resource For Program)";
+                                    break;
+                                }
+
+                                args[k]=arg;
+
+                                if (k==(args.length-1)) {
+                                    String[] methodParts = split(programArgs[0].get(0),".");
+                                    if (getProgramByTag(methodParts[0]+"~")==null)
+                                        respond = respond + "(Invalid Resource For Program)";
+                                    else {
+                                        respond = respond + runProgram(methodParts[1],split(methodParts[2],"(")[0],args);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -463,7 +590,9 @@ public class ProgrammableBot {
         while (messageContent.endsWith(" "))
             messageContent = replaceLast(messageContent, " ", "");
         messageContent = messageContent.toLowerCase();
-        if (messageContent.startsWith(".new_res ") && isWhite)
+        if ((messageContent.startsWith(".add_program ")) && isWhite)
+            message.reply(handleAddProgram(message.getContent()));
+        else if (messageContent.startsWith(".new_res ") && isWhite)
             message.reply(handleAddNewRes(messageContent));
         else if ((messageContent.startsWith(".add_to_res ")) && isWhite)
             message.reply(handleAddToRes(messageContent));
@@ -531,6 +660,8 @@ public class ProgrammableBot {
             message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```.res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
         } else if (messageContent.startsWith(".save db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", ""));
+            File program = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", "")+".program");
+
             if (!db.getAbsolutePath().contains("..")) {
                 try {
                     ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(db));
@@ -542,10 +673,19 @@ public class ProgrammableBot {
                     e.printStackTrace();
                 }
 
+                try {
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(program));
+                    objectOutputStream.writeObject(programs);
+                    objectOutputStream.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } else
                 message.reply("access denied");
         } else if (messageContent.startsWith(".load db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".load db ", ""));
+            File program = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".load db ", "")+".program");
+
             if (!db.getAbsolutePath().contains("..")) {
                 if (db.exists()) {
                     try {
@@ -556,12 +696,27 @@ public class ProgrammableBot {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+
+
                 } else
                     message.reply("database not found");
+
+                if (program.exists()) {
+                    try {
+                        ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(program));
+                        programs = (ArrayList<Program>) objectInputStream.readObject();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    programs = new ArrayList<Program>();
+                }
             } else
                 message.reply("access denied");
         } else if (messageContent.startsWith(".add db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".add db ", ""));
+            File program = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".add db ", "")+".program");
+
             if (!db.getAbsolutePath().contains("..")) {
                 if (db.exists()) {
                     try {
@@ -597,14 +752,29 @@ public class ProgrammableBot {
                         }
 
 
-
-
                         message.reply("database loaded");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else
                     message.reply("database not found");
+
+                if (program.exists()) {
+                    ObjectInputStream objectInputStream = null;
+                    try {
+                        objectInputStream = new ObjectInputStream(new FileInputStream(program));
+                        ArrayList<Program> programsToAdd = (ArrayList<Program>) objectInputStream.readObject();
+
+                        for (Program programToAdd:programsToAdd)
+                            if (getProgramByTag(programToAdd.programTag)==null)
+                                programs.add(programToAdd);
+
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
             } else
                 message.reply("access denied");
         } else if (messageContent.equals(".reset")&&isWhite) {
