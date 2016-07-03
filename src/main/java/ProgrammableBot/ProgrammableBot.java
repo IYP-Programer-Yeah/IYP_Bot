@@ -293,7 +293,7 @@ public class ProgrammableBot {
 
         MessageCat messageCat=getMessageCatByTag(messageCatToFind);
         if (messageCat!=null) {
-            messageCat.responds.add(getResTagsFromString(messageContent));
+            messageCat.responds.add(getResTagsFromRespondString(messageContent));
             return "Respond added";
         }
         messageCat=new MessageCat();
@@ -574,7 +574,7 @@ public class ProgrammableBot {
 
     private void resetDatabase(){
         File db = new File("F:\\IYPBot Database\\" + "sgafgdffsffgsdfg.db");
-            if (db.exists()) {
+        if (db.exists()) {
                 try {
                     ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(db));
                     availableResources = (ArrayList<AvailableResource>) objectInputStream.readObject();
@@ -583,6 +583,7 @@ public class ProgrammableBot {
                     e.printStackTrace();
                 }
             }
+        programs = new ArrayList<Program>();
     }
 
     public void handleMessages(final Message message, final boolean isWhite, final boolean isAdmin){
