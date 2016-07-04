@@ -658,7 +658,7 @@ public class ProgrammableBot {
                 }
             }.start();
         } else if (messageContent.equals("?help list") && isWhite) {
-            message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```.res_view <resource-rag>```\nsee a list of categories ```.cat_list```");
+            message.getChannelReceiver().sendMessage("see a list of resources ```.res_list```\nview a single resource ```.res_view <resource-tag>```\nsee a list of categories ```.cat_list```");
         } else if (messageContent.startsWith(".save db ") && isWhite) {
             File db = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", ""));
             File program = new File("F:\\IYPBot Database\\" + replaceFirst(messageContent, ".save db ", "")+".program");
