@@ -706,6 +706,9 @@ public class ProgrammableBot {
                     try {
                         ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(program));
                         programs = (ArrayList<Program>) objectInputStream.readObject();
+                        for (Program programAdded:programs)
+                            JavaStringCompiler.compileString(programAdded.code,programAdded.programTag.replace("~",""));
+
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -767,8 +770,10 @@ public class ProgrammableBot {
                         ArrayList<Program> programsToAdd = (ArrayList<Program>) objectInputStream.readObject();
 
                         for (Program programToAdd:programsToAdd)
-                            if (getProgramByTag(programToAdd.programTag)==null)
+                            if (getProgramByTag(programToAdd.programTag)==null) {
+                                JavaStringCompiler.compileString(programToAdd.code,programToAdd.programTag.replace("~",""));
                                 programs.add(programToAdd);
+                            }
 
 
                     } catch (Exception e) {
