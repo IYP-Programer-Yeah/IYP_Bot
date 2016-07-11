@@ -285,22 +285,22 @@ public class ProgrammableBot {
         messageCats.add(messageCat);
         return "Message added";
     }
-    private String handleAddRespond(String message) {
-        String messageData=replaceFirst(message,".add_respond ", "");
+    private String handleAddResponse(String message) {
+        String messageData=replaceFirst(message,".add_response ", "");
         String messageCatToFind=split(messageData," ")[0];
 
         String messageContent=replaceFirst(messageData,messageCatToFind+" ","");
 
         MessageCat messageCat=getMessageCatByTag(messageCatToFind);
         if (messageCat!=null) {
-            messageCat.responds.add(getResTagsFromRespondString(messageContent));
-            return "Respond added";
+            messageCat.responds.add(getResTagsFromResponseString(messageContent));
+            return "Response added";
         }
         messageCat=new MessageCat();
         messageCat.messageTag=messageCatToFind;
-        messageCat.responds.add(getResTagsFromRespondString(messageContent));
+        messageCat.responds.add(getResTagsFromResponseString(messageContent));
         messageCats.add(messageCat);
-        return "Respond added";
+        return "Response added";
     }
 
     private String handleAddProgram (String message) {
@@ -350,7 +350,7 @@ public class ProgrammableBot {
         return msgData;
     }
 
-    private ArrayList<String>[] getResTagsFromRespondString (String message) {
+    private ArrayList<String>[] getResTagsFromResponseString (String message) {
         String[] programParts=split(" "+message,"~");
 
         for (int i=1;i<programParts.length;i+=2) {
@@ -490,8 +490,8 @@ public class ProgrammableBot {
         return null;
     }
 
-    private String readMessageGenerateRespond (String message, String senderMentionTag, String sendChannel) {
-        String respond = null;
+    private String readMessageGenerateResponse (String message, String senderMentionTag, String sendChannel) {
+        String response = null;
         message=message.replaceAll(mentionTag,"@me");
         //for each message category
         NextCat:for (MessageCat messageCat : messageCats)
@@ -501,40 +501,40 @@ public class ProgrammableBot {
                 if (foundResources==null)
                     continue NextMessage;
                 if (messageCat.responds.size()==0) {
-                    respond = messageCat.messageTag;
-                    return respond;
+                    response = messageCat.messageTag;
+                    return response;
                 }
-                respond="";
+                response="";
                 Random rnd = new Random();
-                ArrayList<String>[] respondStructure = messageCat.responds.get(rnd.nextInt()%messageCat.responds.size());
+                ArrayList<String>[] responseStructure = messageCat.responds.get(rnd.nextInt()%messageCat.responds.size());
 
-                NextStructure:for (int i=0;i<respondStructure[0].size();i++){
-                    respond=respond+respondStructure[0].get(i);
+                NextStructure:for (int i=0;i<responseStructure[0].size();i++){
+                    response=response+responseStructure[0].get(i);
                     //add resource
-                    if (i<respondStructure[2].size()) {
-                        if (!respondStructure[1].get(i).startsWith("~")) {
-                            AvailableResource currentResource = getResourceByTag(respondStructure[1].get(i));
+                    if (i<responseStructure[2].size()) {
+                        if (!responseStructure[1].get(i).startsWith("~")) {
+                            AvailableResource currentResource = getResourceByTag(responseStructure[1].get(i));
 
-                            if (respondStructure[2].get(i) == null) {
+                            if (responseStructure[2].get(i) == null) {
                                 if (currentResource == null || currentResource.resources.size() == 0) {
-                                    respond = respond + "(Invalid Resource)";
+                                    response = response + "(Invalid Resource)";
                                     continue;
                                 }
-                                respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
+                                response = response + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
                             } else {
                                 for (int j = 0; j < foundResources[0].size(); j++)
-                                    if (foundResources[2].get(j).equals(respondStructure[2].get(i)) && foundResources[1].get(j).equals(respondStructure[1].get(i))) {
-                                        respond = respond + foundResources[0].get(j);
+                                    if (foundResources[2].get(j).equals(responseStructure[2].get(i)) && foundResources[1].get(j).equals(responseStructure[1].get(i))) {
+                                        response = response + foundResources[0].get(j);
                                         continue NextStructure;
                                     }
                                 if (currentResource == null || currentResource.resources.size() == 0) {
-                                    respond = respond + "(Invalid Resource)";
+                                    response = response + "(Invalid Resource)";
                                     continue;
                                 }
-                                respond = respond + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
+                                response = response + currentResource.resources.get(rnd.nextInt() % currentResource.resources.size());
                             }
                         } else {
-                            ArrayList<String>[] programArgs = getResTagsFromString(respondStructure[1].get(i));
+                            ArrayList<String>[] programArgs = getResTagsFromString(responseStructure[1].get(i));
                             String[] args = new String[programArgs[1].size()];
 
                             for (int k=0;k<args.length;k++) {
@@ -544,7 +544,7 @@ public class ProgrammableBot {
                                         arg=foundResources[0].get(j);
 
                                 if (arg==null) {
-                                    respond = respond + "(Invalid Resource For Program)";
+                                    response = response + "(Invalid Resource For Program)";
                                     break;
                                 }
 
@@ -553,22 +553,22 @@ public class ProgrammableBot {
                                 if (k==(args.length-1)) {
                                     String[] methodParts = split(programArgs[0].get(0),".");
                                     if (getProgramByTag(methodParts[0]+"~")==null)
-                                        respond = respond + "(Invalid Resource For Program)";
+                                        response = response + "(Invalid Resource For Program)";
                                     else {
-                                        respond = respond + runProgram(methodParts[1],split(methodParts[2],"(")[0],args);
+                                        response = response + runProgram(methodParts[1],split(methodParts[2],"(")[0],args);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                respond = respond.replace("@sender", senderMentionTag);
-                respond = respond.replace("#sent-channel", sendChannel);
-                respond = respond.replace("@me", mentionTag);
-                return respond;
+                response = response.replace("@sender", senderMentionTag);
+                response = response.replace("#sent-channel", sendChannel);
+                response = response.replace("@me", mentionTag);
+                return response;
             }
 
-        return respond;
+        return response;
     }
 
 
@@ -601,8 +601,8 @@ public class ProgrammableBot {
             message.reply(handleRemoveFromRes(messageContent));
         else if ((messageContent.startsWith(".add_message ")) && isWhite)
             message.reply(handleAddMessage(messageContent));
-        else if ((messageContent.startsWith(".add_respond ")) && isWhite)
-            message.reply(handleAddRespond(messageContent));
+        else if ((messageContent.startsWith(".add_response ")) && isWhite)
+            message.reply(handleAddResponse(messageContent));
         else if (messageContent.equals(".res_list") && isWhite)
             sendMemberResourceList(message.getAuthor());
         else if (messageContent.equals(".cat_list") && isWhite)
@@ -623,7 +623,7 @@ public class ProgrammableBot {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    message.getChannelReceiver().sendMessage("\n\nadd a message to category```.add_message [category] message content(can include any of the tags below)```\nadd a respond message to category```.add_respond [category] message content(can include any of the tags below```\n\n*Tags:*\n\nplaceholder for resource");
+                    message.getChannelReceiver().sendMessage("\n\nadd a message to category```.add_message [category] message content(can include any of the tags below)```\nadd a response message to category```.add_response [category] message content(can include any of the tags below```\n\n*Tags:*\n\nplaceholder for resource");
                     try {
                         Thread.currentThread().sleep(1000);
                     } catch (InterruptedException e) {
@@ -748,9 +748,9 @@ public class ProgrammableBot {
                                 for (ArrayList<String>[] messageStructure : messageCat.messages)
                                     if (!existingMessageCat.messages.contains(messageStructure))
                                         existingMessageCat.messages.add(messageStructure);
-                                for (ArrayList<String>[] respondStructure : messageCat.responds)
-                                    if (!existingMessageCat.responds.contains(respondStructure))
-                                        existingMessageCat.responds.add(respondStructure);
+                                for (ArrayList<String>[] responseStructure : messageCat.responds)
+                                    if (!existingMessageCat.responds.contains(responseStructure))
+                                        existingMessageCat.responds.add(responseStructure);
                             } else
                                 messageCats.add(messageCat);
                         }
@@ -882,9 +882,9 @@ public class ProgrammableBot {
 
 
         }else {
-            String respond = readMessageGenerateRespond(messageContent, message.getAuthor().getMentionTag(), message.getChannelReceiver().getMentionTag());
-            if (respond != null)
-                message.reply(respond);
+            String response = readMessageGenerateResponse(messageContent, message.getAuthor().getMentionTag(), message.getChannelReceiver().getMentionTag());
+            if (response != null)
+                message.reply(response);
         }
 
     }
