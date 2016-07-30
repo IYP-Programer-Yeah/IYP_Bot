@@ -28,10 +28,10 @@ import static String.StringManipulation.*;
  */
 public class ProgrammableBot {
 
-    static ArrayList<String> classNames = new ArrayList<String>();
-    static ArrayList<Class> classes = new ArrayList<Class>();
+    private ArrayList<String> classNames = new ArrayList<String>();
+    private ArrayList<Class> classes = new ArrayList<Class>();
 
-    public static String runProgram(String className, String functionName, String[] args) {
+    public String runProgram(String className, String functionName, String[] args) {
         try {
 
             URLClassLoader classLoader = null;
