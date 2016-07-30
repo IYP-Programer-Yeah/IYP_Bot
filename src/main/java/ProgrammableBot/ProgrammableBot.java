@@ -1,5 +1,6 @@
 package ProgrammableBot;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
 import de.btobastian.javacord.DiscordAPI;
 import de.btobastian.javacord.Javacord;
@@ -27,6 +28,9 @@ import static String.StringManipulation.*;
  */
 public class ProgrammableBot {
 
+    static ArrayList<String> classNames = new ArrayList<String>();
+    static ArrayList<Class> classes = new ArrayList<Class>();
+
     public static String runProgram(String className, String functionName, String[] args) {
         try {
 
@@ -36,8 +40,17 @@ public class ProgrammableBot {
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
-            Object[] arg={args };
-            Object ret = Class.forName(className, true, classLoader).getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
+            Object[] arg={args};
+            Class funcClass;
+            int index=classNames.indexOf(className);
+            if (index!=-1)
+                funcClass=classes.get(index);
+            else {
+                funcClass=Class.forName(className, true, classLoader);
+                classes.add(funcClass);
+                classNames.add(className);
+            }
+            Object ret = funcClass.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
             return (String)ret;
         } catch (ClassNotFoundException e) {
             return "(Invalid Class)";
