@@ -283,7 +283,9 @@ public class ProgrammableBot {
     }
     private String handleAddMessage(String message) {
         String messageData=replaceFirst(message,".add_message ", "");
-        String messageCatToFind=split(messageData," ")[0];
+        if (!(messageData.startsWith("[")&&messageData.contains("]")))
+            return "invalid category";
+        String messageCatToFind=split(messageData,"]")[0]+']';
 
         String messageContent=replaceFirst(messageData,messageCatToFind+" ","");
 
@@ -300,7 +302,9 @@ public class ProgrammableBot {
     }
     private String handleAddResponse(String message) {
         String messageData=replaceFirst(message,".add_response ", "");
-        String messageCatToFind=split(messageData," ")[0];
+        if (!(messageData.startsWith("[")&&messageData.contains("]")))
+            return "invalid category";
+        String messageCatToFind=split(messageData,"]")[0]+']';
 
         String messageContent=replaceFirst(messageData,messageCatToFind+" ","");
 
@@ -941,6 +945,7 @@ public class ProgrammableBot {
             public void onFailure(Throwable t) {
                 t.printStackTrace();
             }
+
         });
     }
 
