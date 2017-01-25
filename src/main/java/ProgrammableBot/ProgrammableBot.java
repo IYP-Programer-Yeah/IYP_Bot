@@ -1,5 +1,6 @@
 package ProgrammableBot;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
 import de.btobastian.javacord.DiscordAPI;
 import de.btobastian.javacord.Javacord;
@@ -26,8 +27,15 @@ import static String.StringManipulation.*;
  * create a new instance to run the bot
  */
 public class ProgrammableBot {
+<<<<<<< HEAD
     private ArrayList<Class> classes = new ArrayList<Class>();
     private ArrayList<String> classNames = new ArrayList<String>();
+=======
+
+    private ArrayList<String> classNames = new ArrayList<String>();
+    private ArrayList<Class> classes = new ArrayList<Class>();
+
+>>>>>>> origin/master
     public String runProgram(String className, String functionName, String[] args) {
         try {
 
@@ -37,6 +45,7 @@ public class ProgrammableBot {
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
+<<<<<<< HEAD
             Object[] arg={args };
             Class class_read;
             if (classNames.contains(className))
@@ -47,6 +56,19 @@ public class ProgrammableBot {
                 classNames.add(className);
             }
             Object ret = class_read.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
+=======
+            Object[] arg={args};
+            Class funcClass;
+            int index=classNames.indexOf(className);
+            if (index!=-1)
+                funcClass=classes.get(index);
+            else {
+                funcClass=Class.forName(className, true, classLoader);
+                classes.add(funcClass);
+                classNames.add(className);
+            }
+            Object ret = funcClass.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
+>>>>>>> origin/master
             return (String)ret;
         } catch (ClassNotFoundException e) {
             return "(Invalid Class)";
