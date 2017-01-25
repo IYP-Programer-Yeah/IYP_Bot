@@ -27,15 +27,10 @@ import static String.StringManipulation.*;
  * create a new instance to run the bot
  */
 public class ProgrammableBot {
-<<<<<<< HEAD
-    private ArrayList<Class> classes = new ArrayList<Class>();
-    private ArrayList<String> classNames = new ArrayList<String>();
-=======
 
     private ArrayList<String> classNames = new ArrayList<String>();
     private ArrayList<Class> classes = new ArrayList<Class>();
 
->>>>>>> origin/master
     public String runProgram(String className, String functionName, String[] args) {
         try {
 
@@ -45,18 +40,6 @@ public class ProgrammableBot {
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
-<<<<<<< HEAD
-            Object[] arg={args };
-            Class class_read;
-            if (classNames.contains(className))
-                class_read=classes.get(classNames.indexOf(className));
-            else {
-                class_read = Class.forName(className, true, classLoader);
-                classes.add(class_read);
-                classNames.add(className);
-            }
-            Object ret = class_read.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
-=======
             Object[] arg={args};
             Class funcClass;
             int index=classNames.indexOf(className);
@@ -68,7 +51,6 @@ public class ProgrammableBot {
                 classNames.add(className);
             }
             Object ret = funcClass.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
->>>>>>> origin/master
             return (String)ret;
         } catch (ClassNotFoundException e) {
             return "(Invalid Class)";
