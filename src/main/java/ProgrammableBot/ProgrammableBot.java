@@ -26,8 +26,9 @@ import static String.StringManipulation.*;
  * create a new instance to run the bot
  */
 public class ProgrammableBot {
-
-    public static String runProgram(String className, String functionName, String[] args) {
+    private ArrayList<Class> classes = new ArrayList<Class>();
+    private ArrayList<String> classNames = new ArrayList<String>();
+    public String runProgram(String className, String functionName, String[] args) {
         try {
 
             URLClassLoader classLoader = null;
@@ -37,7 +38,15 @@ public class ProgrammableBot {
                 e.printStackTrace();
             }
             Object[] arg={args };
-            Object ret = Class.forName(className, true, classLoader).getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
+            Class class_read;
+            if (classNames.contains(className))
+                class_read=classes.get(classNames.indexOf(className));
+            else {
+                class_read = Class.forName(className, true, classLoader);
+                classes.add(class_read);
+                classNames.add(className);
+            }
+            Object ret = class_read.getDeclaredMethod(functionName, new Class[]{String[].class}).invoke(null, arg);
             return (String)ret;
         } catch (ClassNotFoundException e) {
             return "(Invalid Class)";
